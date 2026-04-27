@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pointage horaire — OUEST ACRO</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #ffffff; --bg2: #f5f7fa; --bg3: #eef1f5;
+    --text: #1a1a1a; --text2: #666; --text3: #999;
+    --border: rgba(0,0,0,0.12); --border2: rgba(0,0,0,0.22);
+    --accent: #1a3a5c; --accent-light: #e8eef5;
+    --radius: 8px; --radius-lg: 12px;
+  }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; font-size: 15px; color: var(--text); background: var(--bg3); min-height: 100vh; }
+  .app { max-width: 760px; margin: 0 auto; padding: 20px 16px 60px; }
+  .app-header { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+  .app-logo { font-size: 18px; font-weight: 700; color: var(--accent); letter-spacing: .3px; }
+  .app-sub { font-size: 13px; color: var(--text2); }
+
+  .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
+  .tab { padding: 9px 16px; font-size: 14px; color: var(--text2); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; background: none; border-top: none; border-left: none; border-right: none; font-family: inherit; }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+  .sec { display: none; } .sec.active { display: block; }
+
+  .card { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px; margin-bottom: 16px; }
+  label { font-size: 13px; color: var(--text2); display: block; margin-bottom: 5px; }
+  input, select, textarea {
+    width: 100%; padding: 9px 11px; font-size: 14px;
+    border: 1px solid var(--border); border-radius: var(--radius);
+    background: var(--bg); color: var(--text); font-family: inherit; margin-bottom: 14px;
+    transition: border-color .15s;
+  }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); }
+  textarea { resize: vertical; min-height: 56px; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+
+  button.primary { background: var(--accent); color: #fff; border: none; padding: 10px 22px; border-radius: var(--radius); font-size: 14px; cursor: pointer; font-family: inherit; font-weight: 600; transition: opacity .15s; }
+  button.primary:hover { opacity: .88; }
+  button.secondary { background: var(--bg); border: 1px solid var(--border2); padding: 10px 16px; border-radius: var(--radius); font-size: 13px; cursor: pointer; color: var(--text); font-family: inherit; transition: background .15s; }
+  button.secondary:hover { background: var(--bg2); }
+
+  .type-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+  .type-btn { padding: 7px 14px; font-size: 13px; border: 1px solid var(--border); border-radius: 20px; background: var(--bg); color: var(--text); cursor: pointer; font-family: inherit; display: flex; align-items: center; gap: 5px; transition: all .15s; }
+  .type-btn:hover { background: var(--bg2); }
+  .type-btn.selected { background: var(--accent-light); border-color: var(--accent); color: var(--accent); font-weight: 600; }
+  .type-btn .del-t { font-size: 14px; color: var(--text3); line-height: 1; padding: 0 2px; background: none; border: none; cursor: pointer; margin: 0; }
+  .add-pill { padding: 7px 14px; font-size: 13px; border: 1px dashed var(--border2); border-radius: 20px; background: none; color: var(--text2); cursor: pointer; font-family: inherit; }
+  .add-pill:hover { background: var(--bg2); }
+  .inline-add { display: flex; gap: 8px; margin-bottom: 14px; }
+  .inline-add input { flex: 1; margin-bottom: 0; }
+
+  .sub-fields { background: var(--bg2); border-radius: var(--radius); padding: 14px; margin-bottom: 14px; border: 1px solid var(--border); }
+  .sub-fields input, .sub-fields select { background: var(--bg); }
+
+  .badge { display: inline-block; font-size: 11px; padding: 2px 9px; border-radius: 10px; font-weight: 600; }
+  .b-teal { background: #E1F5EE; color: #085041; } .b-amber { background: #FFF3DC; color: #7a4a00; }
+  .b-blue { background: #E6F1FB; color: #0c447c; } .b-coral { background: #FAECE7; color: #993C1D; }
+  .b-purple { background: #EEEDFE; color: #3C3489; } .b-gray { background: #F1EFE8; color: #444441; }
+
+  .entry-row { display: flex; align-items: flex-start; gap: 10px; padding: 11px 0; border-bottom: 1px solid var(--border); }
+  .entry-row:last-child { border-bottom: none; }
+  .entry-date { font-size: 13px; color: var(--text2); min-width: 72px; padding-top: 2px; }
+  .entry-desc { flex: 1; font-size: 13px; line-height: 1.55; }
+  .entry-hours { font-size: 14px; font-weight: 700; min-width: 42px; text-align: right; padding-top: 2px; color: var(--accent); }
+  .del-btn { background: none; border: none; color: var(--text3); cursor: pointer; font-size: 18px; padding: 0 3px; line-height: 1; }
+  .del-btn:hover { color: #c0392b; }
+
+  .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
+  .stat-card { background: var(--accent-light); border-radius: var(--radius); padding: 14px; text-align: center; }
+  .stat-val { font-size: 24px; font-weight: 700; color: var(--accent); }
+  .stat-lbl { font-size: 12px; color: var(--text2); margin-top: 3px; }
+
+  .period-nav { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+  .period-lbl { flex: 1; text-align: center; font-size: 15px; font-weight: 600; color: var(--accent); }
+
+  .day-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+  .day-row:last-child { border-bottom: none; }
+  .day-name { font-size: 13px; color: var(--text2); min-width: 92px; }
+  .day-bar-wrap { flex: 1; height: 6px; background: var(--bg3); border-radius: 3px; overflow: hidden; }
+  .day-bar { height: 100%; border-radius: 3px; transition: width .3s; }
+  .day-h { font-size: 13px; font-weight: 700; min-width: 40px; text-align: right; color: var(--accent); }
+
+  .month-row { display: flex; align-items: center; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--border); }
+  .month-row:last-child { border-bottom: none; }
+
+  .cumul-block { margin-bottom: 28px; }
+  .section-title { font-size: 13px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 10px; }
+
+  .empty-state { text-align: center; padding: 32px; color: var(--text2); font-size: 14px; }
+  .duree-preview { font-size: 13px; color: var(--accent); margin-bottom: 14px; min-height: 20px; font-weight: 500; }
+
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--accent); color: #fff; padding: 11px 22px; border-radius: var(--radius); font-size: 14px; opacity: 0; transition: opacity .3s; pointer-events: none; white-space: nowrap; z-index: 9999; box-shadow: 0 4px 16px rgba(0,0,0,.18); }
+  .toast.show { opacity: 1; }
+
+  .pdf-info { background: var(--accent-light); border-radius: var(--radius); padding: 12px 16px; font-size: 13px; color: var(--accent); margin-bottom: 14px; line-height: 1.6; }
+
+  @media (max-width: 520px) {
+    .row, .row3 { grid-template-columns: 1fr; }
+    .stats-grid { grid-template-columns: 1fr 1fr; }
+    .tab { padding: 9px 10px; font-size: 13px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="app-header">
+    <div>
+      <div class="app-logo">OUEST ACRO</div>
+      <div class="app-sub">Suivi des temps de travail</div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('saisie')">Saisie</button>
+    <button class="tab" onclick="showTab('cumuls')">Cumuls</button>
+    <button class="tab" onclick="showTab('historique')">Historique</button>
+    <button class="tab" onclick="showTab('export')">Fiche PDF</button>
+  </div>
+
+  <!-- SAISIE -->
+  <div id="saisie" class="sec active">
+    <div class="card">
+      <div class="row" style="margin-bottom:0">
+        <div>
+          <label>Date</label>
+          <input type="date" id="inp-date">
+        </div>
+        <div>
+          <label>Lieu de travail</label>
+          <select id="inp-lieu" onchange="onLieuChange()"></select>
+          <div id="new-lieu-wrap" style="display:none;margin-top:-8px">
+            <div class="inline-add">
+              <input type="text" id="new-lieu-val" placeholder="Nom du lieu...">
+              <button class="secondary" onclick="addLieu()">Ajouter</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="row3" style="margin-bottom:0">
+        <div><label>Début</label><input type="time" id="inp-debut" value="08:00"></div>
+        <div><label>Fin</label><input type="time" id="inp-fin" value="17:00"></div>
+        <div><label>Pause (min)</label><input type="number" id="inp-pause" value="60" min="0" max="180" step="15"></div>
+      </div>
+      <div class="duree-preview" id="duree-preview"></div>
+
+      <label style="margin-bottom:8px">Type d'activité</label>
+      <div class="type-grid" id="type-grid"></div>
+      <div id="add-type-inline" style="display:none;margin-bottom:14px">
+        <div class="inline-add">
+          <input type="text" id="new-type-val" placeholder="Nom du type d'activité...">
+          <button class="secondary" onclick="addType()">Ajouter</button>
+        </div>
+      </div>
+
+      <div id="sub-zone"></div>
+
+      <div>
+        <label>Notes complémentaires</label>
+        <textarea id="inp-notes" placeholder="Compte-rendu, actions à suivre..."></textarea>
+      </div>
+      <div style="display:flex;gap:10px">
+        <button class="primary" onclick="saveEntry()">Enregistrer</button>
+        <button class="secondary" onclick="clearForm()">Effacer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CUMULS -->
+  <div id="cumuls" class="sec">
+    <div class="cumul-block">
+      <div class="period-nav">
+        <button class="secondary" onclick="prevWeek()">←</button>
+        <span class="period-lbl" id="week-lbl"></span>
+        <button class="secondary" onclick="nextWeek()">→</button>
+      </div>
+      <div class="stats-grid" id="week-stats"></div>
+      <div class="card" id="week-view"></div>
+    </div>
+    <div class="cumul-block">
+      <div class="period-nav">
+        <button class="secondary" onclick="prevMonth()">←</button>
+        <span class="period-lbl" id="month-lbl"></span>
+        <button class="secondary" onclick="nextMonth()">→</button>
+      </div>
+      <div class="stats-grid" id="month-stats"></div>
+      <div class="card" id="month-view"></div>
+    </div>
+  </div>
+
+  <!-- HISTORIQUE -->
+  <div id="historique" class="sec">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <select id="fil-lieu" style="width:auto;margin:0;font-size:13px" onchange="renderHistory()">
+        <option value="">Tous les lieux</option>
+      </select>
+      <button class="secondary" onclick="exportCSV()">Exporter CSV</button>
+    </div>
+    <div class="card" id="history-list"></div>
+  </div>
+
+  <!-- EXPORT PDF -->
+  <div id="export" class="sec">
+    <div class="card">
+      <div class="pdf-info">
+        Le PDF est généré directement dans votre navigateur et téléchargé automatiquement. Aucune connexion requise.
+      </div>
+      <div class="row" style="margin-bottom:0">
+        <div>
+          <label>Mois</label>
+          <select id="pdf-month">
+            <option value="0">Janvier</option><option value="1">Février</option><option value="2">Mars</option>
+            <option value="3">Avril</option><option value="4">Mai</option><option value="5">Juin</option>
+            <option value="6">Juillet</option><option value="7">Août</option><option value="8">Septembre</option>
+            <option value="9">Octobre</option><option value="10">Novembre</option><option value="11">Décembre</option>
+          </select>
+        </div>
+        <div><label>Année</label><select id="pdf-year"></select></div>
+      </div>
+      <div>
+        <label>Nom du collaborateur</label>
+        <input type="text" id="pdf-name" placeholder="Prénom Nom">
+      </div>
+      <div id="pdf-status" style="font-size:13px;color:#c0392b;margin-bottom:12px;min-height:18px"></div>
+      <button class="primary" onclick="generatePDF()">Télécharger la fiche PDF</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SK='oa_temps_v4', LK='oa_lieux_v2', TK='oa_types_v1';
+const MFR=['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+const DFR=['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
+const DEF_LIEUX=['Domicile','Laval','Rennes','Nantes','Le Mans','Tours','Île-de-France','Siège'];
+const DEF_TYPES=['Déplacement','Clients','Siège','Administratif','Phoning / Mail / LinkedIn','Autre'];
+const TCOLS=['b-amber','b-teal','b-blue','b-coral','b-purple','b-gray'];
+
+let lieux=[...DEF_LIEUX], types=[...DEF_TYPES], entries=[], currentType='', weekOffset=0, monthOffset=0;
+
+try{const r=localStorage.getItem(LK);if(r)lieux=JSON.parse(r);}catch(e){}
+try{const r=localStorage.getItem(TK);if(r)types=JSON.parse(r);}catch(e){}
+try{const r=localStorage.getItem(SK);if(r)entries=JSON.parse(r);}catch(e){}
+
+const saveLieux=()=>localStorage.setItem(LK,JSON.stringify(lieux));
+const saveTypes=()=>localStorage.setItem(TK,JSON.stringify(types));
+const saveEntries=()=>localStorage.setItem(SK,JSON.stringify(entries));
+
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2400);
+}
+const fmtH=m=>{const h=Math.floor(m/60),mn=m%60;return mn===0?h+'h':h+'h'+String(mn).padStart(2,'0');};
+const calcDuree=(d,f,p)=>{if(!d||!f)return 0;const[dh,dm]=d.split(':').map(Number),[fh,fm]=f.split(':').map(Number);return Math.max(0,(fh*60+fm)-(dh*60+dm)-(p||0));};
+const typeCol=t=>{const i=types.indexOf(t);return TCOLS[i%TCOLS.length];};
+
+function buildLieuSelect(id,val){
+  const s=document.getElementById(id);const prev=val||s.value;s.innerHTML='';
+  lieux.forEach(l=>{const o=document.createElement('option');o.value=l;o.textContent=l;if(l===prev)o.selected=true;s.appendChild(o);});
+  const o=document.createElement('option');o.value='__new__';o.textContent='+ Ajouter un lieu...';s.appendChild(o);
+}
+function buildFilLieu(){
+  const s=document.getElementById('fil-lieu');const prev=s.value;
+  s.innerHTML='<option value="">Tous les lieux</option>';
+  lieux.forEach(l=>{const o=document.createElement('option');o.value=l;o.textContent=l;if(l===prev)o.selected=true;s.appendChild(o);});
+}
+function onLieuChange(){
+  document.getElementById('new-lieu-wrap').style.display=document.getElementById('inp-lieu').value==='__new__'?'block':'none';
+}
+function addLieu(){
+  const val=document.getElementById('new-lieu-val').value.trim();if(!val)return;
+  if(!lieux.includes(val)){lieux.push(val);saveLieux();}
+  buildLieuSelect('inp-lieu',val);buildFilLieu();
+  document.getElementById('new-lieu-wrap').style.display='none';
+  document.getElementById('new-lieu-val').value='';
+  toast('Lieu ajouté : '+val);
+}
+
+function buildTypeGrid(){
+  const g=document.getElementById('type-grid');g.innerHTML='';
+  types.forEach(t=>{
+    const btn=document.createElement('button');
+    btn.className='type-btn'+(currentType===t?' selected':'');
+    btn.innerHTML=`<span>${t}</span>`;
+    btn.onclick=()=>selectType(t);
+    if(!DEF_TYPES.includes(t)){
+      const d=document.createElement('button');d.className='del-t';d.textContent='×';d.title='Supprimer';
+      d.onclick=e=>{e.stopPropagation();removeType(t);};
+      btn.appendChild(d);
+    }
+    g.appendChild(btn);
+  });
+  const ab=document.createElement('button');ab.className='add-pill';ab.textContent='+ Ajouter...';
+  ab.onclick=()=>{
+    const w=document.getElementById('add-type-inline');
+    w.style.display=w.style.display==='none'?'block':'none';
+    if(w.style.display==='block')document.getElementById('new-type-val').focus();
+  };
+  g.appendChild(ab);
+}
+function addType(){
+  const val=document.getElementById('new-type-val').value.trim();if(!val)return;
+  if(!types.includes(val)){types.push(val);saveTypes();}
+  currentType=val;buildTypeGrid();renderSubZone();
+  document.getElementById('add-type-inline').style.display='none';
+  document.getElementById('new-type-val').value='';
+  toast('Type ajouté : '+val);
+}
+function removeType(t){
+  if(currentType===t)currentType='';
+  types=types.filter(x=>x!==t);saveTypes();buildTypeGrid();renderSubZone();
+}
+function selectType(t){currentType=t;buildTypeGrid();renderSubZone();}
+
+const PSUBS={
+  'Déplacement':[{id:'dep-ville',label:'Ville(s)',ph:'Ex : Angers, Le Mans...'},{id:'dep-client',label:'Client(s) / Prospect(s)',ph:'Nom du client'},{id:'dep-libre',label:'Précisions libres',ph:'Objet, résultat...'}],
+  'Clients':[{id:'cli-client',label:'Client(s)',ph:'Nom du client'},{id:'cli-interlo',label:'Interlocuteur',ph:'Nom, poste...'},{id:'cli-libre',label:'Précisions libres',ph:'Objet, résultat...'}],
+  'Siège':[{id:'sie-objet',label:'Objet / Réunion',ph:'Réunion commerciale, formation...'},{id:'sie-libre',label:'Précisions libres',ph:'Participants, décisions...'}],
+  'Administratif':[{id:'adm-nature',label:'Nature de la tâche',ph:'Devis, reporting, CRM...'},{id:'adm-libre',label:'Précisions libres',ph:'Détail, avancement...'}],
+  'Phoning / Mail / LinkedIn':'phoning',
+};
+
+function renderSubZone(){
+  const z=document.getElementById('sub-zone');if(!currentType){z.innerHTML='';return;}
+  const p=PSUBS[currentType];
+  if(!p){z.innerHTML=`<div class="sub-fields"><label>Précisions libres</label><input type="text" id="custom-libre" placeholder="Détails..."></div>`;return;}
+  if(p==='phoning'){
+    z.innerHTML=`<div class="sub-fields">
+      <div class="row" style="margin-bottom:0">
+        <div><label>Canal</label><select id="pho-canal"><option value="">— Canal —</option><option>Phoning</option><option>Mail</option><option>LinkedIn</option></select></div>
+        <div><label>Nb de contacts</label><input type="number" id="pho-nb" placeholder="Ex : 12" min="0"></div>
+      </div>
+      <div><label>Précisions libres</label><input type="text" id="pho-libre" placeholder="Cible, RDV obtenus..."></div>
+    </div>`;return;
+  }
+  let html='<div class="sub-fields">';
+  for(let i=0;i<p.length;i+=2){
+    const pair=p.slice(i,i+2);
+    if(pair.length===2){html+=`<div class="row" style="margin-bottom:0">`;pair.forEach(f=>html+=`<div><label>${f.label}</label><input type="text" id="${f.id}" placeholder="${f.ph}"></div>`);html+=`</div>`;}
+    else pair.forEach(f=>html+=`<div><label>${f.label}</label><input type="text" id="${f.id}" placeholder="${f.ph}"></div>`);
+  }
+  z.innerHTML=html+'</div>';
+}
+
+function getSubData(){
+  const g=id=>{const e=document.getElementById(id);return e?e.value.trim():'';};
+  const p=PSUBS[currentType];const d={};
+  if(!p){d.libre=g('custom-libre');return d;}
+  if(p==='phoning'){d.canal=g('pho-canal');d.nb=g('pho-nb');d.libre=g('pho-libre');return d;}
+  p.forEach(f=>d[f.id.split('-')[1]]=g(f.id));return d;
+}
+
+function subSummary(type,sub){
+  if(!sub)return'';
+  if(type==='Déplacement')return[sub.ville,sub.client,sub.libre].filter(Boolean).join(' · ');
+  if(type==='Clients')return[sub.client,sub.interlo,sub.libre].filter(Boolean).join(' · ');
+  if(type==='Siège')return[sub.objet,sub.libre].filter(Boolean).join(' · ');
+  if(type==='Administratif')return[sub.nature,sub.libre].filter(Boolean).join(' · ');
+  if(type==='Phoning / Mail / LinkedIn'){const p=[];if(sub.canal)p.push(sub.canal);if(sub.nb)p.push(sub.nb+' contacts');if(sub.libre)p.push(sub.libre);return p.join(' · ');}
+  return[sub.libre,sub.desc].filter(Boolean).join(' · ');
+}
+
+function updatePreview(){
+  const d=document.getElementById('inp-debut').value,f=document.getElementById('inp-fin').value;
+  const p=parseInt(document.getElementById('inp-pause').value)||0;
+  const m=calcDuree(d,f,p);
+  document.getElementById('duree-preview').textContent=m>0?'Durée effective : '+fmtH(m):'';
+}
+['inp-debut','inp-fin','inp-pause'].forEach(id=>document.getElementById(id).addEventListener('input',updatePreview));
+
+function saveEntry(){
+  const date=document.getElementById('inp-date').value;
+  const lieu=document.getElementById('inp-lieu').value;
+  const debut=document.getElementById('inp-debut').value;
+  const fin=document.getElementById('inp-fin').value;
+  const pause=parseInt(document.getElementById('inp-pause').value)||0;
+  const notes=document.getElementById('inp-notes').value.trim();
+  if(!date||!debut||!fin){toast('Date et horaires obligatoires');return;}
+  if(!currentType){toast('Choisissez un type d\'activité');return;}
+  if(!lieu||lieu==='__new__'){toast('Choisissez un lieu');return;}
+  const mins=calcDuree(debut,fin,pause);if(mins<=0){toast('Durée invalide');return;}
+  entries.push({id:Date.now(),date,lieu,debut,fin,pause,mins,type:currentType,sub:getSubData(),notes});
+  entries.sort((a,b)=>b.date.localeCompare(a.date));
+  saveEntries();
+  toast('Enregistré — '+fmtH(mins));
+  clearForm();
+}
+
+function clearForm(){
+  document.getElementById('inp-date').value=new Date().toISOString().split('T')[0];
+  buildLieuSelect('inp-lieu');
+  document.getElementById('new-lieu-wrap').style.display='none';
+  document.getElementById('inp-debut').value='08:00';
+  document.getElementById('inp-fin').value='17:00';
+  document.getElementById('inp-pause').value='60';
+  document.getElementById('inp-notes').value='';
+  currentType='';buildTypeGrid();
+  document.getElementById('sub-zone').innerHTML='';
+  document.getElementById('add-type-inline').style.display='none';
+  updatePreview();
+}
+
+function deleteEntry(id){
+  if(!confirm('Supprimer cette saisie ?'))return;
+  entries=entries.filter(e=>e.id!==id);saveEntries();renderCumuls();renderHistory();toast('Supprimé');
+}
+
+function showTab(name){
+  ['saisie','cumuls','historique','export'].forEach((n,i)=>{
+    document.querySelectorAll('.tab')[i].classList.toggle('active',n===name);
+    document.getElementById(n).classList.toggle('active',n===name);
+    document.getElementById(n).style.display=n===name?'block':'none';
+  });
+  if(name==='cumuls')renderCumuls();
+  if(name==='historique')renderHistory();
+  if(name==='export')initExport();
+}
+
+function getWeekDates(off){
+  const now=new Date();const day=now.getDay()||7;const mon=new Date(now);mon.setDate(now.getDate()-day+1+off*7);
+  const days=[];for(let i=0;i<5;i++){const d=new Date(mon);d.setDate(mon.getDate()+i);days.push(d.toISOString().split('T')[0]);}return days;
+}
+
+function renderCumuls(){renderWeek();renderMonth();}
+
+function renderWeek(){
+  const days=getWeekDates(weekOffset);
+  const dn=['Lundi','Mardi','Mercredi','Jeudi','Vendredi'];
+  const de=days.map(d=>entries.filter(e=>e.date===d));
+  const tot=de.flat().reduce((s,e)=>s+e.mins,0);
+  const j=de.filter(d=>d.length>0).length;
+  const[,m1,d1]=days[0].split('-');const[y2,m2,d2]=days[4].split('-');
+  document.getElementById('week-lbl').textContent=`Semaine du ${d1}/${m1} au ${d2}/${m2}/${y2}`;
+  document.getElementById('week-stats').innerHTML=`
+    <div class="stat-card"><div class="stat-val">${fmtH(tot)}</div><div class="stat-lbl">Total semaine</div></div>
+    <div class="stat-card"><div class="stat-val">${j}</div><div class="stat-lbl">Jours saisis</div></div>
+    <div class="stat-card"><div class="stat-val">${j?fmtH(Math.round(tot/j)):'0h'}</div><div class="stat-lbl">Moy. / jour</div></div>`;
+  const mx=Math.max(...de.map(d=>d.reduce((s,e)=>s+e.mins,0)),480);
+  let html='';
+  days.forEach((date,i)=>{
+    const d=de[i];const m=d.reduce((s,e)=>s+e.mins,0);
+    const pct=mx?Math.round(m/mx*100):0;const[,mm,dd]=date.split('-');
+    const col=m===0?'#ccc':m<420?'#e67e22':m>=600?'#2980b9':'#27ae60';
+    const tags=d.map(e=>`<span class="badge ${typeCol(e.type)}">${e.type}</span>`).join(' ');
+    html+=`<div class="day-row">
+      <span class="day-name">${dn[i]} <span style="font-size:11px;color:#999">${dd}/${mm}</span></span>
+      <div style="flex:1;padding-right:10px">
+        <div class="day-bar-wrap" style="margin-bottom:5px"><div class="day-bar" style="width:${pct}%;background:${col}"></div></div>
+        <div style="font-size:11px;line-height:1.8">${tags||'—'}</div>
+      </div>
+      <span class="day-h">${m?fmtH(m):'—'}</span>
+    </div>`;
+  });
+  document.getElementById('week-view').innerHTML=html||'<div class="empty-state">Aucune saisie cette semaine</div>';
+}
+
+function renderMonth(){
+  const now=new Date();const target=new Date(now.getFullYear(),now.getMonth()+monthOffset,1);
+  const y=target.getFullYear(),m=target.getMonth();
+  document.getElementById('month-lbl').textContent=MFR[m]+' '+y;
+  const me=entries.filter(e=>{const[ey,em]=e.date.split('-').map(Number);return ey===y&&em-1===m;});
+  const tot=me.reduce((s,e)=>s+e.mins,0);const j=new Set(me.map(e=>e.date)).size;
+  document.getElementById('month-stats').innerHTML=`
+    <div class="stat-card"><div class="stat-val">${fmtH(tot)}</div><div class="stat-lbl">Total mois</div></div>
+    <div class="stat-card"><div class="stat-val">${j}</div><div class="stat-lbl">Jours saisis</div></div>
+    <div class="stat-card"><div class="stat-val">${j?fmtH(Math.round(tot/j)):'0h'}</div><div class="stat-lbl">Moy. / jour</div></div>`;
+  const byT={};me.forEach(e=>{byT[e.type]=(byT[e.type]||0)+e.mins;});
+  let html='';
+  if(!Object.keys(byT).length){html='<div class="empty-state">Aucune saisie ce mois</div>';}
+  else{
+    const mx=Math.max(...Object.values(byT));
+    Object.entries(byT).sort((a,b)=>b[1]-a[1]).forEach(([t,m])=>{
+      const pct=Math.round(m/mx*100);
+      html+=`<div class="month-row">
+        <span class="badge ${typeCol(t)}" style="min-width:140px;text-align:center">${t}</span>
+        <div style="flex:1;margin:0 12px"><div class="day-bar-wrap"><div class="day-bar" style="width:${pct}%;background:#27ae60"></div></div></div>
+        <span style="font-size:14px;font-weight:700;min-width:42px;text-align:right;color:#1a3a5c">${fmtH(m)}</span>
+      </div>`;
+    });
+  }
+  document.getElementById('month-view').innerHTML=html;
+}
+
+function prevWeek(){weekOffset--;renderWeek();}function nextWeek(){weekOffset++;renderWeek();}
+function prevMonth(){monthOffset--;renderMonth();}function nextMonth(){monthOffset++;renderMonth();}
+
+function renderHistory(){
+  const fil=document.getElementById('fil-lieu').value;
+  const filtered=fil?entries.filter(e=>e.lieu===fil):entries;
+  if(!filtered.length){document.getElementById('history-list').innerHTML='<div class="empty-state">Aucune saisie</div>';return;}
+  let html='';
+  filtered.forEach(e=>{
+    const[y,m,d]=e.date.split('-');const s=subSummary(e.type,e.sub||{});
+    html+=`<div class="entry-row">
+      <span class="entry-date">${d}/${m}/${y}</span>
+      <span class="entry-desc">
+        ${e.lieu?`<span class="badge b-blue" style="margin-right:6px">${e.lieu}</span>`:''}
+        <span class="badge ${typeCol(e.type)}">${e.type}</span>
+        ${s?` <span style="font-size:12px;color:#777">· ${s}</span>`:''}
+        ${e.notes?`<br><span style="font-size:12px;color:#888">${e.notes.substring(0,100)}</span>`:''}
+      </span>
+      <span class="entry-hours">${fmtH(e.mins)}</span>
+      <button class="del-btn" onclick="deleteEntry(${e.id})" title="Supprimer">×</button>
+    </div>`;
+  });
+  document.getElementById('history-list').innerHTML=html;
+}
+
+function exportCSV(){
+  const fil=document.getElementById('fil-lieu').value;
+  const filtered=fil?entries.filter(e=>e.lieu===fil):entries;
+  if(!filtered.length){toast('Rien à exporter');return;}
+  const rows=[['Date','Lieu','Début','Fin','Pause(min)','Durée(h)','Type','Détails','Notes']];
+  filtered.forEach(e=>rows.push([e.date,e.lieu,e.debut,e.fin,e.pause,(e.mins/60).toFixed(2),e.type,subSummary(e.type,e.sub||{}),(e.notes||'').replace(/[\n\r]/g,' ')]));
+  const csv=rows.map(r=>r.map(c=>'"'+(c||'')+'"').join(';')).join('\n');
+  const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);const a=document.createElement('a');
+  a.href=url;a.download='temps_ouestacro_'+new Date().toISOString().split('T')[0]+'.csv';
+  a.click();URL.revokeObjectURL(url);toast('CSV téléchargé');
+}
+
+function initExport(){
+  const now=new Date();
+  document.getElementById('pdf-month').value=now.getMonth();
+  const ys=document.getElementById('pdf-year');ys.innerHTML='';
+  for(let y=now.getFullYear();y>=now.getFullYear()-3;y--){const o=document.createElement('option');o.value=y;o.textContent=y;ys.appendChild(o);}
+}
+
+function generatePDF(){
+  const m=parseInt(document.getElementById('pdf-month').value);
+  const y=parseInt(document.getElementById('pdf-year').value);
+  const name=document.getElementById('pdf-name').value.trim()||'—';
+  const st=document.getElementById('pdf-status');
+
+  if(typeof window.jspdf==='undefined'){st.textContent='Librairie PDF non chargée. Vérifiez votre connexion internet.';return;}
+
+  const {jsPDF}=window.jspdf;
+  const me=entries.filter(e=>{const[ey,em]=e.date.split('-').map(Number);return ey===y&&em-1===m;});
+  me.sort((a,b)=>a.date.localeCompare(b.date));
+  if(!me.length){st.textContent='Aucune saisie pour '+MFR[m]+' '+y+'.';return;}
+  st.textContent='';
+
+  const tot=me.reduce((s,e)=>s+e.mins,0);
+  const joursAvec=new Set(me.map(e=>e.date)).size;
+  const byT={};me.forEach(e=>{byT[e.type]=(byT[e.type]||0)+e.mins;});
+
+  const doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
+  const W=doc.internal.pageSize.getWidth();
+  const C1=[26,58,92],C2=[240,244,248],CG=[110,110,110];
+
+  // Header
+  doc.setFillColor(...C1);doc.rect(0,0,W,24,'F');
+  doc.setTextColor(255,255,255);
+  doc.setFontSize(15);doc.setFont('helvetica','bold');doc.text('OUEST ACRO',14,11);
+  doc.setFontSize(9);doc.setFont('helvetica','normal');doc.text('Fiche de suivi horaire mensuel',14,17);
+  doc.setFontSize(12);doc.setFont('helvetica','bold');doc.text(MFR[m]+' '+y,W/2,11,{align:'center'});
+  doc.setFontSize(10);doc.setFont('helvetica','normal');doc.text(name,W/2,17,{align:'center'});
+  doc.setTextColor(...CG);doc.setFontSize(8);doc.text('Généré le '+new Date().toLocaleDateString('fr-FR'),W-14,20,{align:'right'});
+
+  // Stats boxes
+  const sx=14,sy=30,sw=44,sh=16;
+  const stats=[
+    [fmtH(tot),'Total du mois'],
+    [joursAvec+' jours','travaillés'],
+    [joursAvec?fmtH(Math.round(tot/joursAvec)):'—','moy. / jour'],
+    [me.length+' saisies','ce mois'],
+  ];
+  stats.forEach((s,i)=>{
+    const x=sx+i*(sw+5);
+    doc.setFillColor(...C2);doc.roundedRect(x,sy,sw,sh,2,2,'F');
+    doc.setTextColor(...C1);doc.setFontSize(13);doc.setFont('helvetica','bold');
+    doc.text(s[0],x+sw/2,sy+8,{align:'center'});
+    doc.setFontSize(8);doc.setFont('helvetica','normal');doc.setTextColor(...CG);
+    doc.text(s[1],x+sw/2,sy+13,{align:'center'});
+  });
+
+  // Main table
+  const rows=me.map(e=>{
+    const[ey,em,ed]=e.date.split('-');
+    const dObj=new Date(parseInt(ey),parseInt(em)-1,parseInt(ed));
+    const s=subSummary(e.type,e.sub||{});
+    const detail=(s+(e.notes?' | '+e.notes.substring(0,55):'')).trim();
+    return[DFR[dObj.getDay()]+' '+ed+'/'+em, e.lieu||'', e.debut, e.fin, e.pause+'min', fmtH(e.mins), e.type, detail];
+  });
+  rows.push(['TOTAL','','','','',fmtH(tot),joursAvec+' jour(s)','']);
+
+  doc.autoTable({
+    startY:sy+sh+6,
+    head:[['Jour','Lieu','Début','Fin','Pause','Durée','Type','Détails / Notes']],
+    body:rows,
+    styles:{fontSize:8,cellPadding:2.5,overflow:'linebreak',textColor:[30,30,30]},
+    headStyles:{fillColor:C1,textColor:[255,255,255],fontStyle:'bold',fontSize:8},
+    columnStyles:{
+      0:{cellWidth:18},1:{cellWidth:24},2:{cellWidth:13},3:{cellWidth:13},
+      4:{cellWidth:14},5:{cellWidth:14,fontStyle:'bold',textColor:C1},
+      6:{cellWidth:36},7:{cellWidth:'auto'}
+    },
+    alternateRowStyles:{fillColor:C2},
+    didParseCell:d=>{if(d.row.index===rows.length-1){d.cell.styles.fontStyle='bold';d.cell.styles.fillColor=[210,220,235];}},
+    margin:{left:14,right:14},
+  });
+
+  let fy=doc.lastAutoTable.finalY+10;
+  if(fy>175){doc.addPage();fy=20;}
+
+  // Synthèse
+  doc.setFontSize(10);doc.setFont('helvetica','bold');doc.setTextColor(...C1);
+  doc.text('Répartition par activité',14,fy);
+
+  const synRows=Object.entries(byT).sort((a,b)=>b[1]-a[1]).map(([t,m])=>[t,fmtH(m),Math.round(m/tot*100)+'%']);
+  doc.autoTable({
+    startY:fy+4,
+    head:[['Type d\'activité','Durée','Part']],
+    body:synRows,
+    styles:{fontSize:8,cellPadding:2.5},
+    headStyles:{fillColor:C1,textColor:[255,255,255],fontStyle:'bold'},
+    columnStyles:{0:{cellWidth:65},1:{cellWidth:22,fontStyle:'bold'},2:{cellWidth:16}},
+    alternateRowStyles:{fillColor:C2},
+    margin:{left:14,right:14},tableWidth:103,
+  });
+
+  // Signatures
+  const sigY=doc.lastAutoTable.finalY+12;
+  if(sigY<185){
+    doc.setDrawColor(180,180,180);doc.setLineWidth(0.3);
+    doc.setFontSize(8);doc.setTextColor(...CG);
+    doc.text('Signature collaborateur :',14,sigY);
+    doc.rect(14,sigY+3,65,14);
+    doc.text('Signature responsable :',105,sigY);
+    doc.rect(105,sigY+3,65,14);
+  }
+
+  doc.save(`fiche_horaire_OUESTACRO_${name.replace(/\s+/g,'_')}_${MFR[m]}_${y}.pdf`);
+  toast('PDF téléchargé !');
+}
+
+// Init
+['cumuls','historique','export'].forEach(n=>{document.getElementById(n).style.display='none';});
+document.getElementById('inp-date').value=new Date().toISOString().split('T')[0];
+buildLieuSelect('inp-lieu');buildFilLieu();buildTypeGrid();updatePreview();
+initExport();
+</script>
+</body>
+</html>
